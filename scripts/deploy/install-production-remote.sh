@@ -148,6 +148,7 @@ prepare_remote_workspace() {
   fetch_to_file "scripts/deploy/issue-chain-space-production-cert.sh" "${REMOTE_SCRIPT_DIR}/issue-chain-space-production-cert.sh"
   fetch_to_file "scripts/deploy/check-chain-space-production.sh" "${REMOTE_SCRIPT_DIR}/check-chain-space-production.sh"
   fetch_to_file "scripts/deploy/setup-chain-space-production.sh" "${REMOTE_SCRIPT_DIR}/setup-chain-space-production.sh"
+  fetch_to_file "scripts/deploy/config/deploy-release.production.env.example" "${REMOTE_SCRIPT_DIR}/config/deploy-release.production.env.example"
   fetch_to_file "scripts/deploy/templates/chain-space-production-http.conf.example" "${REMOTE_SCRIPT_DIR}/templates/chain-space-production-http.conf.example"
   fetch_to_file "scripts/deploy/templates/chain-space-production-https.conf.example" "${REMOTE_SCRIPT_DIR}/templates/chain-space-production-https.conf.example"
 
@@ -225,6 +226,40 @@ BACKEND_ENV_TEMPLATE=${REMOTE_REPO_ROOT}/backend/.env.production.example
 
 COPY_BACKEND_ENV_TEMPLATE=true
 FORCE_COPY_ENV_TEMPLATE=${FORCE_COPY_ENV_TEMPLATE}
+EOF
+}
+
+write_deploy_config() {
+  local config_file="${REMOTE_SCRIPT_DIR}/config/deploy-release.production.env"
+
+  mkdir -p "$(dirname "${config_file}")"
+
+  cat >"${config_file}" <<EOF
+PROJECT_NAME=${APP_NAME}
+DEPLOY_ROOT=${PROJECT_ROOT}
+BACKEND_SOURCE_DIR=/srv/chain-space/backend
+FRONTEND_SOURCE_DIR=/srv/chain-space/frontend
+APP_USER=${APP_USER}
+APP_GROUP=${APP_GROUP}
+PHP_BIN=php
+COMPOSER_BIN=composer
+RELEASES_TO_KEEP=5
+RUN_MIGRATIONS=true
+MIGRATION_STRATEGY=compatible
+ALLOW_DESTRUCTIVE_MIGRATIONS=false
+DESTRUCTIVE_MIGRATIONS_CONFIRMATION=
+RUN_STORAGE_LINK=true
+RUN_FRONTEND_BUILD=false
+RUN_HEALTHCHECK=true
+HEALTHCHECK_URL=https://${SERVER_NAME}/api/v1/health
+RUN_ACCESS_CHECKS=true
+ADMIN_ROUTE_PREFIX=admin
+ADMIN_SMOKE_URL=https://${SERVER_NAME}/admin/auth/login
+ADMIN_SMOKE_EXPECT_STATUSES=200
+ADMIN_SMOKE_CONTAINS=Dcat Admin
+ALLOW_DIRTY_WORKTREE=false
+QUEUE_MODE=${QUEUE_MODE}
+SUPERVISOR_PROGRAMS="${APP_NAME}-default-worker:* ${APP_NAME}-video-processing:*"
 EOF
 }
 
@@ -362,6 +397,7 @@ main() {
 
   prepare_remote_workspace
   write_server_config
+  write_deploy_config
   run_setup
   print_next_steps
 }
