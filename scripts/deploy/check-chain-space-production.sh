@@ -242,11 +242,7 @@ check_runtime_versions() {
 
   if cs_command_exists rabbitmqctl; then
     rabbitmq_version_output="$(rabbitmqctl version 2>/dev/null | tr -d '\r' | head -n 1)"
-    if [[ -n "${rabbitmq_version_output}" ]]; then
-      pass "RabbitMQ 版本已识别: ${rabbitmq_version_output}"
-    else
-      fail "RabbitMQ 版本识别失败"
-    fi
+    check_major_minor_prefix "RabbitMQ" "${rabbitmq_version_output}" "3.13"
 
     if [[ -f /etc/apt/sources.list.d/rabbitmq.list ]] && grep -Eq 'deb[[:space:]].*deb[12]\.rabbitmq\.com/.*/rabbitmq-server/ubuntu/' /etc/apt/sources.list.d/rabbitmq.list; then
       pass "RabbitMQ 官方 apt 仓库存在"

@@ -150,6 +150,24 @@ deb [arch=${apt_arch} signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https
 EOF
 }
 
+resolve_rabbitmq_package_version() {
+  local resolved_version=""
+
+  if ! cs_bool_is_true "${INSTALL_RABBITMQ}"; then
+    return
+  fi
+
+  resolved_version="$(
+    apt-cache madison rabbitmq-server \
+      | awk '$3 ~ /^3\.13\./ { print $3; exit }'
+  )"
+
+  [[ -n "${resolved_version}" ]] || cs_die "RabbitMQ 官方仓库中未找到 3.13.x 可安装版本"
+
+  RABBITMQ_PACKAGE_VERSION="${resolved_version}"
+  cs_log "INFO" "RabbitMQ 锁定版本: ${RABBITMQ_PACKAGE_VERSION}"
+}
+
 assert_php_version_supported() {
   if [[ "${UBUNTU_VERSION_ID}" == "24.04" && "${PHP_VERSION}" != "8.2" ]]; then
     cs_log "WARN" "Ubuntu 24.04 当前推荐 PHP 8.2，以保持与仓库现有 Laravel 11 / 发布脚本基线一致"
@@ -185,7 +203,8 @@ install_main_packages() {
   fi
 
   if cs_bool_is_true "${INSTALL_RABBITMQ}"; then
-    packages+=(rabbitmq-server)
+    resolve_rabbitmq_package_version
+    packages+=("rabbitmq-server=${RABBITMQ_PACKAGE_VERSION}")
   fi
 
   if cs_bool_is_true "${INSTALL_ELASTICSEARCH}"; then
