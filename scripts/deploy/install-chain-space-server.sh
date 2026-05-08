@@ -150,6 +150,22 @@ deb [arch=${apt_arch} signed-by=/usr/share/keyrings/com.rabbitmq.team.gpg] https
 EOF
 }
 
+ensure_rabbitmq_package_preferences() {
+  if ! cs_bool_is_true "${INSTALL_RABBITMQ}"; then
+    return
+  fi
+
+  cat > /etc/apt/preferences.d/rabbitmq-3.13.pref <<'EOF'
+Package: rabbitmq-server
+Pin: version 3.13.*
+Pin-Priority: 1001
+
+Package: erlang erlang-*
+Pin: version 1:26.*
+Pin-Priority: 1001
+EOF
+}
+
 resolve_rabbitmq_package_version() {
   local resolved_version=""
 
@@ -526,6 +542,7 @@ main() {
   cs_run_step "配置 PHP 软件源" "${LOG_FILE}" ensure_php_repository
   cs_run_step "配置 Node.js 软件源" "${LOG_FILE}" ensure_nodesource_repository
   cs_run_step "配置 RabbitMQ 软件源" "${LOG_FILE}" ensure_rabbitmq_repository
+  cs_run_step "写入 RabbitMQ 3.13 / Erlang 26 锁定规则" "${LOG_FILE}" ensure_rabbitmq_package_preferences
   cs_run_step "配置 Elasticsearch 软件源" "${LOG_FILE}" ensure_elastic_repository
   cs_run_step "安装主运行依赖" "${LOG_FILE}" install_main_packages
   cs_run_step "配置 PHP" "${LOG_FILE}" configure_php
