@@ -1,0 +1,19 @@
+[program:chain-space-scheduler]
+command=/bin/bash -lc 'while true; do {{php_bin}} {{app_root}}/artisan schedule:run --verbose --no-interaction; sleep 60; done'
+directory={{app_root}}
+process_name=%(program_name)s
+numprocs=1
+autostart=true
+autorestart=true
+startsecs=5
+startretries=3
+stopwaitsecs=30
+stopsignal=TERM
+stopasgroup=true
+killasgroup=true
+user={{app_user}}
+redirect_stderr=true
+stdout_logfile={{stdout_logfile}}
+stdout_logfile_maxbytes=20MB
+stdout_logfile_backups=5
+environment=APP_ENV="{{app_env}}"

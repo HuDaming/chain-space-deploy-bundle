@@ -1,0 +1,46 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name {{server_name}};
+
+    access_log {{access_log}};
+    error_log {{error_log}} warn;
+
+    client_max_body_size {{client_max_body_size}};
+
+    location ^~ /.well-known/acme-challenge/ {
+        root {{acme_webroot}};
+        try_files $uri =404;
+    }
+
+    location / {
+        root {{backend_root}}/public;
+        index index.php index.html;
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location = /favicon.ico {
+        access_log off;
+        log_not_found off;
+    }
+
+    location = /robots.txt {
+        access_log off;
+        log_not_found off;
+    }
+
+    location ~ \.php$ {
+        root {{backend_root}}/public;
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:{{php_fpm_socket}};
+        fastcgi_read_timeout 300;
+        fastcgi_send_timeout 300;
+        fastcgi_param SCRIPT_FILENAME {{backend_root}}/public$fastcgi_script_name;
+        fastcgi_param DOCUMENT_ROOT {{backend_root}}/public;
+        include fastcgi_params;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
